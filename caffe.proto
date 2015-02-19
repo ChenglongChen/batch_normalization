@@ -39,7 +39,16 @@ message FillerParameter {
   // The expected number of non-zero input weights for a given output in
   // Gaussian filler -- the default -1 means don't perform sparsification.
   optional int32 sparse = 7 [default = -1];
-  optional float negative_slope = 8 [default = 0]; // the negative slope of the leaky relu attached to the activation
+  // the negative slope of the leaky relu attached to the previous activation
+  optional float negative_slope = 8 [default = 0];
+  // Normalize the filler variance by fan_in, fan_out, or their average.
+  // Applies to xavier and relu fillers.
+  enum VarianceNorm {
+    FAN_IN = 0;
+    FAN_OUT = 1;
+    AVERAGE = 2;
+  }
+  optional VarianceNorm variance_norm = 9 [default = FAN_IN];
 }
 
 message NetParameter {
@@ -225,7 +234,7 @@ message LayerParameter {
   // line above the enum. Update the next available ID when you add a new
   // LayerType.
   //
-  // LayerType next available ID: 39 (last added: BATCH_NORM)
+  // LayerType next available ID: 40 (last added: BN)
   enum LayerType {
     // "NONE" layer type is 0th enum element so that we don't cause confusion
     // by defaulting to an existent LayerType (instead, should usually error if
@@ -234,6 +243,7 @@ message LayerParameter {
     ABSVAL = 35;
     ACCURACY = 1;
     ARGMAX = 30;
+	BN = 39;
     BNLL = 2;
     CONCAT = 3;
 	COMPACT_DATA = 37;
@@ -254,9 +264,10 @@ message LayerParameter {
     LRN = 15;
     MEMORY_DATA = 29;
     MULTINOMIAL_LOGISTIC_LOSS = 16;
-    BN = 34;
+    MVN = 34;
     POOLING = 17;
     POWER = 26;
+	PRELU = 38;
     RELU = 18;
     SIGMOID = 19;
     SIGMOID_CROSS_ENTROPY_LOSS = 27;
@@ -297,7 +308,8 @@ message LayerParameter {
   repeated float loss_weight = 35;
 
   optional AccuracyParameter accuracy_param = 27;
-  optional ArgMaxParameter argmax_param = 23;
+  optional ArgMaxParameter argmax_param = 23;  
+  optional BNParameter bn_param = 41;
   optional ConcatParameter concat_param = 9;
   optional ConvolutionParameter convolution_param = 10;
   optional DataParameter data_param = 11;
@@ -312,17 +324,18 @@ message LayerParameter {
   optional InnerProductParameter inner_product_param = 17;
   optional LRNParameter lrn_param = 18;
   optional MemoryDataParameter memory_data_param = 22;
-  optional BNParameter bn_param = 34;
+  optional MVNParameter mvn_param = 34;
   optional PoolingParameter pooling_param = 19;
   optional PowerParameter power_param = 21;
+  optional PReLUParameter prelu_param = 40;
   optional ReLUParameter relu_param = 30;
   optional SigmoidParameter sigmoid_param = 38;
   optional SoftmaxParameter softmax_param = 39;
   optional SliceParameter slice_param = 31;
   optional TanHParameter tanh_param = 37;
   optional ThresholdParameter threshold_param = 25;
-  optional WindowDataParameter window_data_param = 20;
-
+  optional WindowDataParameter window_data_param = 20; 
+  
   // Parameters for data pre-processing.
   optional TransformationParameter transform_param = 36;
 
@@ -351,16 +364,21 @@ message TransformationParameter {
   optional string mean_file = 4;
   optional bool multiscale = 5 [default = false];
   // Specify the range of scaling factor for doing resizing
-  //optional float min_scaling_factor = 6 [default = 0.5];
-  //optional float max_scaling_factor = 7 [default = 2];
+  optional float min_scaling_factor = 6 [default = 0.75];
+  optional float max_scaling_factor = 7 [default = 1.50];
   // Specify the angle interval for doing rotation
-  //optional float angle_interval = 8 [default = 5];
+  optional float angle_interval = 8 [default = 1];
+  // Specify the shearing ratio
+  optional float min_shear_bxy = 9 [default = -0.125];
+  optional float max_shear_bxy = 10 [default = 0.125];
+  // Specify the perspective ratio
+  optional float max_perspective_ratio = 11 [default = 0.125];
   // Specify the constant value we would like to fill with when doing affine transformation
-  //optional float warp_fillval = 9 [default = 255];
-  optional bool debug_display = 6 [default = false];
-  optional bool contrast_adjustment = 7 [default = false];
-  optional bool smooth_filtering = 8 [default = false];
-  optional bool jpeg_compression = 9 [default = false];
+  optional float warp_fillval = 12 [default = 255];
+  optional bool debug_display = 13 [default = false];
+  optional bool contrast_adjustment = 14 [default = false];
+  optional bool smooth_filtering = 15 [default = false];
+  optional bool jpeg_compression = 16 [default = false];
 }
 
 // Message that stores parameters used by AccuracyLayer
@@ -569,6 +587,15 @@ message MemoryDataParameter {
   optional uint32 width = 4;
 }
 
+// Message that stores parameters used by MVNLayer
+message MVNParameter {
+  // This parameter can be set to false to normalize mean only
+  optional bool normalize_variance = 1 [default = true];
+
+  // This parameter can be set to true to perform DNN-like MVN
+  optional bool across_channels = 2 [default = false];
+}
+
 // Message that stores parameters used by BNLayer
 message BNParameter {
   optional FillerParameter scale_filler = 1; // The filler for the scale
@@ -608,6 +635,17 @@ message PowerParameter {
   optional float power = 1 [default = 1.0];
   optional float scale = 2 [default = 1.0];
   optional float shift = 3 [default = 0.0];
+}
+
+// Message that stores parameters used by PReLULayer
+message PReLUParameter {
+  // Parametric ReLU described in K. He et al, Delving Deep into Rectifiers:
+  // Surpassing Human-Level Performance on ImageNet Classification, 2015.
+
+  // Initial value of a_i. Set as a_i=init_value for all channel i.
+  optional float init_value = 1 [default = 0.25];
+  // Whether or not slope paramters are shared across channels.
+  optional bool channel_shared = 2 [default = false];
 }
 
 // Message that stores parameters used by ReLULayer

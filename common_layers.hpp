@@ -104,6 +104,8 @@ protected:
 	Blob<Dtype> batch_mean_, batch_variance_;
 	// buffer blob
 	Blob<Dtype> buffer_blob_;
+	// x_norm
+	Blob<Dtype> x_norm_;
 
 	// x_sum_multiplier is used to carry out sum using BLAS
 	Blob<Dtype> spatial_sum_multiplier_, batch_sum_multiplier_;
@@ -329,7 +331,6 @@ class InnerProductLayer : public Layer<Dtype> {
 *
 * TODO(dox): thorough documentation for Forward, Backward, and proto params.
 */
-/*
 template <typename Dtype>
 class MVNLayer : public Layer<Dtype> {
 public:
@@ -359,7 +360,6 @@ protected:
 	/// sum_multiplier is used to carry out sum using BLAS
 	Blob<Dtype> sum_multiplier_;
 };
-*/
 
 /**
  * @brief Ignores bottom blobs while producing no top blobs. (This is useful
