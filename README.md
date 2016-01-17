@@ -9,3 +9,7 @@ To add this layer, you have to modify `common_layers.hpp`, `layer_factory.cpp` a
 This implementation is very basic which just performs batch normalization computation. Two pieces in [the paper](http://arxiv.org/pdf/1502.03167v1.pdf) are still missing here:
 * fixed mean \& variance for inference
 * per batch shuffling for thorough randomness
+
+# Update log
+
+2016/01/18 An improved version is provided [here](https://github.com/ChenglongChen/caffe-windows) with moving average statistics for inference.
